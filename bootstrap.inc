@@ -1,63 +1,20 @@
 <?php
 /**
- * Returns the equivalent of Apache's $_SERVER['REQUEST_URI'] variable.
- *
- * Because $_SERVER['REQUEST_URI'] is only available on Apache, we generate an
- * equivalent using other environment variables.
- */
-function request_uri() {
-  if (isset($_SERVER['REQUEST_URI'])) {
-    $uri = $_SERVER['REQUEST_URI'];
-  }
-  else {
-    if (isset($_SERVER['argv'])) {
-      $uri = $_SERVER['SCRIPT_NAME'] . '?' . $_SERVER['argv'][0];
-    }
-    elseif (isset($_SERVER['QUERY_STRING'])) {
-      $uri = $_SERVER['SCRIPT_NAME'] . '?' . $_SERVER['QUERY_STRING'];
-    }
-    else {
-      $uri = $_SERVER['SCRIPT_NAME'];
-    }
-  }
-  // Prevent multiple slashes to avoid cross site requests via the Form API.
-  $uri = '/' . ltrim($uri, '/');
-
-  return $uri;
-}
-
-/**
  * Returns the requested URL path of the page being viewed.
  *
- * Examples:
- * - http://example.com/node/306 returns "node/306".
- * - http://example.com/drupalfolder/node/306 returns "node/306" while
- *   base_path() returns "/drupalfolder/".
- * - http://example.com/path/alias (which is a path alias for node/306) returns
- *   "path/alias" as opposed to the internal path.
- * - http://example.com/index.php returns an empty string (meaning: front page).
- * - http://example.com/index.php?page=1 returns an empty string.
- *
  * @return
- *   The requested Drupal URL path.
+ *   The requested URL path.
  *
  * @see current_path()
  */
-function request_path() {
+function requested_path() {
   static $path;
 
   if (isset($path)) {
     return $path;
   }
 
-  if (isset($_GET['q']) && is_string($_GET['q'])) {
-    // This is a request with a ?q=foo/bar query string. $_GET['q'] is
-    // overwritten in drupal_path_initialize(), but request_path() is called
-    // very early in the bootstrap process, so the original value is saved in
-    // $path and returned in later calls.
-    $path = $_GET['q'];
-  }
-  elseif (isset($_SERVER['REQUEST_URI'])) {
+  if (isset($_SERVER['REQUEST_URI'])) {
     // This request is either a clean URL, or 'index.php', or nonsense.
     // Extract the path from REQUEST_URI.
     $request_path = strtok($_SERVER['REQUEST_URI'], '?');
@@ -85,10 +42,49 @@ function request_path() {
   return $path;
 }
 
-function response_to($request_path) {
-  include "router.php";
-  if(isset($routes[$request_path]))
-    echo $routes[$request_path];
-  else 
-    echo "Oops..!";
+//Renders a page
+function _render_page($variables, $tpl_file = 'default') {
+  ob_start();
+  extract($variables);
+  require_once 'themes/'.$tpl_file.'.tpl';
+  ob_end_flush();
+}
+
+//Parses the URL
+function _parse_url($url) {
+  global $urls;
+  $args = explode('/', $url);
+  $callback = array_shift($args);
+  if (isset($urls[$callback])) {
+    $content = call_user_func_array($urls[$callback]['callback'], $args);
+  }
+  $variables = array(
+    'title' => isset($url) ? $url : 'SMS',
+    'content' => isset($content) ? $content : '<i>No content assigned/returned.</i>',
+  );
+  $html = _render_page($variables);
+  
+  return $html;
+}
+
+function response($url_path) {
+  $file_name = "paths.json";
+  $paths_handle = @fopen($file_name, "r");
+  if($paths_handle) {
+    $pathsJson = fread($paths_handle, filesize($file_name));
+    $paths = json_decode($pathsJson, true);
+    fclose($paths_handle);
+    if(isset($paths[$url_path])) {
+      _render_page($paths[$url_path]);
+    } else {
+      _render_page(
+        array(
+          "title" => "404",
+          "content" => "Requested page not found. Please verify the path"
+        )
+      ); 
+    }
+  } else {
+    echo "<b>paths.json</b> not found!";
+  }
 }

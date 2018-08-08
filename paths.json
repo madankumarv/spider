@@ -1,0 +1,15 @@
+{
+  "": {
+    "title" : "Home",
+    "content" : "Hello World"
+  },
+  "alphabets": {
+    "title" : "Alphabets",
+    "content" : "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+  },
+  "user/login": {
+    "title" : "Login",
+    "content" : "Username:<br />Password:</br />" 
+  }
+}
+
