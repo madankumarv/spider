@@ -1,4 +1,6 @@
 <?php
+require_once "utils.inc";
+require_once "spider.inc";
 /**
  * Returns the requested URL path of the page being viewed.
  *
@@ -43,30 +45,30 @@ function requested_path() {
 }
 
 //Renders a page
-function _render_page($variables, $tpl_file = 'default') {
+function render_page($variables, $theme='default') {
   ob_start();
   extract($variables);
-  require_once 'themes/'.$tpl_file.'.tpl';
+  if(isset($_SERVER['HTTP_X_REQUESTED_WITH'])) {
+    echo $variables['content'];
+  } else {
+    require_once SPIDER_ROOT.'/themes/'.$theme.'/page.tpl';
+  }
   $html = ob_get_flush();
 }
 
 function response($url_path) {
-  include_once "spider.php";
   $file_name = "paths.json";
-  $paths_handle = @fopen($file_name, "r");
-  if($paths_handle) {
-    $pathsJson = fread($paths_handle, filesize($file_name));
+  $pathsJson = spider_fread($file_name);
+  if($pathsJson) {
     $paths = json_decode($pathsJson, true);
-    fclose($paths_handle);
     if(isset($paths[$url_path])) {
       $path = $paths[$url_path];
       if(!isset($path['content'])) {
         $path['content'] = call_user_func($path['callback']);
       }
-      $html = _render_page($path);
-           
+      $html = render_page($path);
     } else {
-      _render_page(
+      render_page(
         array(
           "title" => "404",
           "content" => "Requested page not found. Please verify the path"

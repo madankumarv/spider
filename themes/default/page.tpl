@@ -2,6 +2,8 @@
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<script src="themes/default/script.js"></script>
 <title><?php echo $title ?></title>
 </head>
 <body><?php echo $content; ?></body>
