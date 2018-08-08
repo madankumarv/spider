@@ -47,27 +47,11 @@ function _render_page($variables, $tpl_file = 'default') {
   ob_start();
   extract($variables);
   require_once 'themes/'.$tpl_file.'.tpl';
-  ob_end_flush();
-}
-
-//Parses the URL
-function _parse_url($url) {
-  global $urls;
-  $args = explode('/', $url);
-  $callback = array_shift($args);
-  if (isset($urls[$callback])) {
-    $content = call_user_func_array($urls[$callback]['callback'], $args);
-  }
-  $variables = array(
-    'title' => isset($url) ? $url : 'SMS',
-    'content' => isset($content) ? $content : '<i>No content assigned/returned.</i>',
-  );
-  $html = _render_page($variables);
-  
-  return $html;
+  $html = ob_get_flush();
 }
 
 function response($url_path) {
+  include_once "spider.php";
   $file_name = "paths.json";
   $paths_handle = @fopen($file_name, "r");
   if($paths_handle) {
@@ -75,7 +59,12 @@ function response($url_path) {
     $paths = json_decode($pathsJson, true);
     fclose($paths_handle);
     if(isset($paths[$url_path])) {
-      _render_page($paths[$url_path]);
+      $path = $paths[$url_path];
+      if(!isset($path['content'])) {
+        $path['content'] = call_user_func($path['callback']);
+      }
+      $html = _render_page($path);
+           
     } else {
       _render_page(
         array(

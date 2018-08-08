@@ -3,6 +3,10 @@
     "title" : "Home",
     "content" : "Hello World"
   },
+  "spider" : {
+    "title" : "Spider Administration",
+    "callback" : "spider"
+  },
   "alphabets": {
     "title" : "Alphabets",
     "content" : "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
